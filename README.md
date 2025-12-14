@@ -70,6 +70,52 @@ dependencies {
 }
 ```
 Tu lahko vidimo da ima **no-op** verzijo, ki se uporabi v release buildu in ne dela ničesar tako, da ne vpljiva na učinkovitost delovanja aplikacije.
+```kotlin
+object RetrofitClient {
+    private const val BASE_URL = "http://localhost:8080/api/"
+
+    fun createApiService(context: Context): ApiService {
+
+        val chuckerCollector = ChuckerCollector(
+            context = context, // Kontekst aplikacije
+            showNotification = false, // Prikaži obvestilo ko kaj prestrežemo
+            retentionPeriod = RetentionManager.Period.ONE_HOUR // Kako dolgo hraniti prestrežene podatke
+        )
+
+        val chuckerInterceptor = ChuckerInterceptor.Builder(context)
+            .collector(chuckerCollector) // Da ve kam shranjevati podatke
+            .maxContentLength(250_000L) // 250 KB
+            .alwaysReadResponseBody(true) // Vedno prebere telo odgovora
+            .build()
+
+        // OkHttp z Chuckerjem
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(chuckerInterceptor)  // CHUCKER
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .build()
+
+        val retrofit = Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        return retrofit.create(ApiService::class.java)
+    }
+}
+```
+```kotlin
+binding.btnOpenChucker.setOnClickListener {
+    startActivity(Chucker.getLaunchIntent(this))
+}
+```
+<img width="493" height="1101" alt="image" src="https://github.com/user-attachments/assets/293d25f3-baa9-46dd-8b6e-28e61d8669f9" />
+<img width="495" height="1102" alt="image" src="https://github.com/user-attachments/assets/30486b21-c58d-44d4-aaf7-0337be119aa0" />
+<img width="493" height="1105" alt="image" src="https://github.com/user-attachments/assets/3aaef0a8-9336-4cd0-b572-5a4daea9b4b4" />
+<img width="493" height="1103" alt="image" src="https://github.com/user-attachments/assets/73ceb336-0635-4ae2-a210-f9cd15406a9f" />
+
+
 
 
 
